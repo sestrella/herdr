@@ -128,15 +128,6 @@ impl App {
         let key = raw_key.as_key_event();
         self.state.update_dismissed = true;
 
-        if self.state.navigate_pre_sidebar_collapsed.is_none()
-            && self.state.sidebar_collapsed
-            && self.state.sidebar_collapsed_mode
-                == crate::config::SidebarCollapsedModeConfig::Hidden
-        {
-            self.state.navigate_pre_sidebar_collapsed = Some(true);
-            self.state.sidebar_collapsed = false;
-        }
-
         if key.code == KeyCode::Esc || self.state.is_prefix_key(raw_key) {
             leave_navigate_mode(&mut self.state);
             return;
@@ -267,6 +258,7 @@ impl App {
             }
             NavigateAction::WorkspacePicker => {
                 self.state.mobile_switcher_scroll = 0;
+                self.state.expand_sidebar_for_navigate();
                 self.state.mode = Mode::Navigate;
             }
             NavigateAction::PreviousWorkspace => {
@@ -1297,15 +1289,6 @@ pub(crate) fn handle_navigate_key(state: &mut AppState, key: KeyEvent) {
     state.update_dismissed = true;
     let terminal_key = TerminalKey::from(key);
 
-    if state.navigate_pre_sidebar_collapsed.is_none()
-        && state.sidebar_collapsed
-        && state.sidebar_collapsed_mode
-            == crate::config::SidebarCollapsedModeConfig::Hidden
-    {
-        state.navigate_pre_sidebar_collapsed = Some(true);
-        state.sidebar_collapsed = false;
-    }
-
     if state.is_prefix_key(terminal_key) || key.code == KeyCode::Esc {
         leave_navigate_mode(state);
         return;
@@ -1646,6 +1629,7 @@ pub(super) fn execute_navigate_action_in_context(
         }
         NavigateAction::WorkspacePicker => {
             state.mobile_switcher_scroll = 0;
+            state.expand_sidebar_for_navigate();
             state.mode = Mode::Navigate;
         }
         NavigateAction::PreviousWorkspace => {
@@ -1806,15 +1790,16 @@ fn workspace_can_start_worktree_action(
 }
 
 fn leave_navigate_mode(state: &mut AppState) {
-    if let Some(prev) = state.navigate_pre_sidebar_collapsed.take() {
-        state.sidebar_collapsed = prev;
-    }
+    state.restore_sidebar_from_navigate();
     if state.active.is_some() {
         state.mode = Mode::Terminal;
     }
 }
 
 fn finish_action_context(state: &mut AppState, context: ActionContext, previous_mode: Mode) {
+    if state.mode == Mode::Navigate && previous_mode != Mode::Navigate {
+        state.expand_sidebar_for_navigate();
+    }
     if matches!(context, ActionContext::Direct | ActionContext::Prefix)
         && state.mode == previous_mode
     {

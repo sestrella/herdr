@@ -1607,6 +1607,29 @@ pub struct AppState {
 }
 
 impl AppState {
+    /// Save the current `sidebar_collapsed` state and expand the sidebar if
+    /// `sidebar_collapsed_mode` is `Hidden`. Called when entering workspace
+    /// navigation mode.
+    pub(crate) fn expand_sidebar_for_navigate(&mut self) {
+        if self.navigate_pre_sidebar_collapsed.is_none()
+            && self.sidebar_collapsed
+            && self.sidebar_collapsed_mode
+                == crate::config::SidebarCollapsedModeConfig::Hidden
+        {
+            self.navigate_pre_sidebar_collapsed = Some(true);
+            self.sidebar_collapsed = false;
+        }
+    }
+
+    /// Restore the `sidebar_collapsed` state saved by
+    /// [`expand_sidebar_for_navigate`]. Called when leaving workspace
+    /// navigation mode.
+    pub(crate) fn restore_sidebar_from_navigate(&mut self) {
+        if let Some(prev) = self.navigate_pre_sidebar_collapsed.take() {
+            self.sidebar_collapsed = prev;
+        }
+    }
+
     pub(crate) fn mark_session_dirty(&mut self) {
         self.session_dirty = true;
     }
