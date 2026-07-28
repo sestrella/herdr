@@ -1502,6 +1502,10 @@ pub struct AppState {
     pub sidebar_width_auto: bool,
     pub sidebar_collapsed: bool,
     pub sidebar_collapsed_mode: crate::config::SidebarCollapsedModeConfig,
+    /// Saved `sidebar_collapsed` value before entering workspace navigation mode.
+    /// When `sidebar_collapsed_mode` is `Hidden`, navigate mode expands the
+    /// sidebar and this field records what to restore afterwards.
+    pub(crate) navigate_pre_sidebar_collapsed: Option<bool>,
     /// Ratio of sidebar height allocated to the workspaces section.
     pub sidebar_section_split: f32,
     pub agent_panel_sort: AgentPanelSort,
@@ -1882,6 +1886,7 @@ impl AppState {
             sidebar_width_auto: false,
             sidebar_collapsed: false,
             sidebar_collapsed_mode: crate::config::SidebarCollapsedModeConfig::Compact,
+            navigate_pre_sidebar_collapsed: None,
             sidebar_section_split: 0.5,
             agent_panel_sort: AgentPanelSort::Spaces,
             agent_view_override: None,

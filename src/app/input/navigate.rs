@@ -128,6 +128,15 @@ impl App {
         let key = raw_key.as_key_event();
         self.state.update_dismissed = true;
 
+        if self.state.navigate_pre_sidebar_collapsed.is_none()
+            && self.state.sidebar_collapsed
+            && self.state.sidebar_collapsed_mode
+                == crate::config::SidebarCollapsedModeConfig::Hidden
+        {
+            self.state.navigate_pre_sidebar_collapsed = Some(true);
+            self.state.sidebar_collapsed = false;
+        }
+
         if key.code == KeyCode::Esc || self.state.is_prefix_key(raw_key) {
             leave_navigate_mode(&mut self.state);
             return;
@@ -1288,6 +1297,15 @@ pub(crate) fn handle_navigate_key(state: &mut AppState, key: KeyEvent) {
     state.update_dismissed = true;
     let terminal_key = TerminalKey::from(key);
 
+    if state.navigate_pre_sidebar_collapsed.is_none()
+        && state.sidebar_collapsed
+        && state.sidebar_collapsed_mode
+            == crate::config::SidebarCollapsedModeConfig::Hidden
+    {
+        state.navigate_pre_sidebar_collapsed = Some(true);
+        state.sidebar_collapsed = false;
+    }
+
     if state.is_prefix_key(terminal_key) || key.code == KeyCode::Esc {
         leave_navigate_mode(state);
         return;
@@ -1788,6 +1806,9 @@ fn workspace_can_start_worktree_action(
 }
 
 fn leave_navigate_mode(state: &mut AppState) {
+    if let Some(prev) = state.navigate_pre_sidebar_collapsed.take() {
+        state.sidebar_collapsed = prev;
+    }
     if state.active.is_some() {
         state.mode = Mode::Terminal;
     }
